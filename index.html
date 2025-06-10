@@ -634,8 +634,7 @@
                 if (!docSnapshot.exists()) {
                     // Si el documento de configuración no existe, lo crea con valores por defecto
                     setDoc(doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings'), {
-                        teacherPassword: simpleHash('docente123'), // Clave docente por defecto
-                        delegatePassword: simpleHash('delegado123') // Clave delegado por defecto
+                        //Las claves ya se definieron en su momento, no hace falta harcodear nada más
                     }).then(() => {
                         console.log("Configuración por defecto de la aplicación creada.");
                     }).catch(error => {
