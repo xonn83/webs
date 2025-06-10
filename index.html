@@ -348,8 +348,15 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variables globales proporcionadas por el entorno de Canvas
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const firebaseConfig = {
+                  apiKey: "AIzaSyAnCGJ3aQPI0SUY461cJ8bQbO_UWx0Q7v4",
+                  authDomain: "gestiondehuelgas.firebaseapp.com",
+                  projectId: "gestiondehuelgas",
+                  storageBucket: "gestiondehuelgas.firebasestorage.app",
+                  messagingSenderId: "527352835343",
+                  appId: "1:527352835343:web:4d863831e2af01c3bd627a"
+                };
+        const appId = firebaseConfig.appId;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Inicialización de Firebase
