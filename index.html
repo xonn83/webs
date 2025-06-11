@@ -138,6 +138,23 @@
                 grid-template-columns: 1fr; /* Una columna en pantallas pequeñas */
             }
         }
+        /* Estilo para el indicador de evento finalizado */
+        .event-finished-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #ef4444; /* Rojo */
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px; /* Totalmente redondeado */
+            font-size: 0.75rem; /* Texto pequeño */
+            font-weight: 600;
+            line-height: 1; /* Asegura que el texto no se salga */
+        }
+        /* Asegura que la tarjeta de huelga sea el contenedor para la posición absoluta */
+        .strike-card-relative {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -166,7 +183,7 @@
                 <li>`nombre_completo`</li>
                 <li>`clave`</li>
             </ul>
-            <p class="text-gray-700 mb-4 text-left">Las columnas pueden estar separadas por **comas (`,`)** o **puntos y coma (`;`)**.</p>
+            <p class="text-gray-700 mb-4 text-left">Las columnas pueden estar separadas por **comas (`,`)** o **puntos y coma (`;`)`)**.</p>
             <input type="file" id="csv-file-input" accept=".csv" class="mb-4 form-input border-none">
             <div id="bulk-upload-results" class="text-sm text-left my-4 max-h-40 overflow-y-auto"></div>
             <div class="modal-buttons">
@@ -184,7 +201,6 @@
                 <label for="role-select" class="block text-gray-700 text-sm font-semibold mb-2">Seleccione su Rol:</label>
                 <select id="role-select" class="form-input rounded-md">
                     <option value="teacher">Docente</option>
-                    <option value="delegate">Delegado</option>
                     <option value="student">Estudiante</option>
                 </select>
             </div>
@@ -198,26 +214,17 @@
                 <button type="submit" class="btn-primary rounded-md">Entrar como Docente</button>
             </form>
 
-            <!-- Formulario de Login para Delegado (inicialmente oculto) -->
-            <form id="delegate-login-form" class="hidden">
-                <div class="mb-4">
-                    <label for="delegate-password" class="block text-gray-700 text-sm font-semibold mb-2">Clave Delegado:</label>
-                    <input type="password" id="delegate-password" class="form-input rounded-md" placeholder="Ingrese su clave">
-                </div>
-                <button type="submit" class="btn-primary rounded-md">Entrar como Delegado</button>
-            </form>
-
-            <!-- Formulario de Login para Estudiante (inicialmente oculto) -->
+            <!-- Formulario de Login para Estudiante (incluye delegados ahora) -->
             <form id="student-login-form" class="hidden">
                 <div class="mb-4">
-                    <label for="student-username" class="block text-gray-700 text-sm font-semibold mb-2">Usuario Estudiante:</label>
+                    <label for="student-username" class="block text-gray-700 text-sm font-semibold mb-2">Usuario:</label>
                     <input type="text" id="student-username" class="form-input rounded-md" placeholder="Ingrese su usuario">
                 </div>
                 <div class="mb-4">
-                    <label for="student-password" class="block text-gray-700 text-sm font-semibold mb-2">Clave Estudiante:</label>
+                    <label for="student-password" class="block text-gray-700 text-sm font-semibold mb-2">Clave:</label>
                     <input type="password" id="student-password" class="form-input rounded-md" placeholder="Ingrese su clave">
                 </div>
-                <button type="submit" class="btn-primary rounded-md">Entrar como Estudiante</button>
+                <button type="submit" class="btn-primary rounded-md">Entrar</button>
             </form>
         </div>
 
@@ -231,14 +238,14 @@
                 <h3 class="text-xl font-semibold mb-4 text-gray-700">Cambiar Clave del Delegado</h3>
                 <form id="change-delegate-password-form">
                     <div class="mb-4">
-                        <label for="new-delegate-password" class="block text-gray-700 text-sm font-semibold mb-2">Nueva Clave:</label>
+                        <label for="new-delegate-password" class="block text-gray-700 text-sm font-semibold mb-2">Nueva Clave del Delegado:</label>
                         <input type="password" id="new-delegate-password" class="form-input rounded-md" placeholder="Ingrese la nueva clave del delegado">
                     </div>
-                    <button type="submit" class="btn-primary rounded-md">Cambiar Clave</button>
+                    <button type="submit" class="btn-primary rounded-md">Actualizar Clave Delegado</button>
                 </form>
             </div>
 
-            <!-- Sección para Gestionar Estudiantes (Añadir/Eliminar) -->
+            <!-- Sección para Gestionar Estudiantes (Añadir/Eliminar/Designar Delegado) -->
             <div class="mb-8 p-4 bg-gray-50 rounded-lg">
                 <h3 class="text-xl font-semibold mb-4 text-gray-700">Gestionar Estudiantes</h3>
                 <form id="add-student-form" class="mb-6">
@@ -265,6 +272,7 @@
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
                             </tr>
                         </thead>
@@ -303,7 +311,7 @@
             <button id="logout-delegate-btn" class="btn-secondary rounded-md float-right -mt-10 mr-2">Cerrar Sesión</button>
 
             <!-- Formulario para Crear Eventos de Huelga -->
-            <div class="p-4 bg-gray-50 rounded-lg">
+            <div class="mb-8 p-4 bg-gray-50 rounded-lg">
                 <h3 class="text-xl font-semibold mb-4 text-gray-700">Crear Evento de Huelga</h3>
                 <form id="create-strike-form">
                     <div class="mb-4">
@@ -321,20 +329,29 @@
                     <button type="submit" class="btn-primary rounded-md">Crear Huelga</button>
                 </form>
             </div>
+
+            <!-- Sección de Huelgas Disponibles para Delegado (puede adherirse) -->
+            <div class="p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto strike-card-relative">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Tus Huelgas Creadas y Adhesiones</h3>
+                <p id="no-strikes-message-delegate" class="text-gray-500 text-center py-4 hidden">No hay huelgas disponibles en este momento.</p>
+                <div id="delegate-strikes-list">
+                    <!-- Las huelgas se inyectarán aquí dinámicamente -->
+                </div>
+            </div>
         </div>
 
-        <!-- Sección de Estudiante: Visible solo para usuarios logueados como Estudiante -->
+        <!-- Sección de Estudiante: Visible solo para usuarios logueados como Estudiante NO delegado -->
         <div id="student-section" class="card hidden max-w-2xl">
             <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Sección Estudiante</h2>
             <button id="logout-student-btn" class="btn-secondary rounded-md float-right -mt-10 mr-2">Cerrar Sesión</button>
 
             <p class="text-gray-600 mb-4">Bienvenido, <span id="student-fullname-display" class="font-semibold"></span>!</p>
 
-            <div class="p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+            <div class="p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto strike-card-relative">
                 <h3 class="text-xl font-semibold mb-4 text-gray-700">Huelgas Disponibles</h3>
-                <div id="strikes-for-students-list">
+                <p id="no-strikes-message-student" class="text-gray-500 text-center py-4 hidden">No hay huelgas disponibles en este momento.</p>
+                <div id="student-strikes-list">
                     <!-- Las huelgas se inyectarán aquí dinámicamente -->
-                    <p id="no-strikes-message" class="text-gray-500 text-center py-4 hidden">No hay huelgas disponibles en este momento.</p>
                 </div>
             </div>
         </div>
@@ -347,7 +364,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variables globales proporcionadas por el entorno de Canvas
+        // Variables globales
         const firebaseConfig = {
                   apiKey: "AIzaSyAnCGJ3aQPI0SUY461cJ8bQbO_UWx0Q7v4",
                   authDomain: "gestiondehuelgas.firebaseapp.com",
@@ -359,10 +376,26 @@
         const appId = firebaseConfig.appId;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+        /*
+        // EJEMPLO: Si publicas en GitHub Pages, DEBES descomentar y reemplazar con tus credenciales REALES:
+        const myFirebaseConfig = {
+             apiKey: "TU_API_KEY_REAL",
+             authDomain: "TU_AUTH_DOMAIN_REAL",
+             projectId: "TU_PROJECT_ID_REAL",
+             storageBucket: "TU_STORAGE_BUCKET_REAL",
+             messagingSenderId: "TU_MESSAGING_SENDER_ID_REAL",
+             appId: "TU_WEB_APP_ID_REAL"
+        };
+        const appId = myFirebaseConfig.projectId; // O usa un ID de tu elección para segmentar tus datos
+        const firebaseConfig = myFirebaseConfig;
+        */
+
         // Inicialización de Firebase
         let app, db, auth;
         let currentUserId = null; // UID del usuario autenticado en Firebase
         let isAuthReady = false; // Bandera para indicar si Firebase Auth está listo
+        let allStrikes = []; // Global variable to hold all strikes data
+
 
         // Referencias a elementos del DOM
         const messageBox = document.getElementById('message-box');
@@ -373,8 +406,7 @@
 
         const roleSelect = document.getElementById('role-select');
         const teacherLoginForm = document.getElementById('teacher-login-form');
-        const delegateLoginForm = document.getElementById('delegate-login-form');
-        const studentLoginForm = document.getElementById('student-login-form');
+        const studentLoginForm = document.getElementById('student-login-form'); // Este ahora incluye delegados
 
         // Elementos del modal de confirmación
         const confirmationModal = document.getElementById('confirmation-modal');
@@ -395,37 +427,41 @@
         // Elementos de la sección del Docente
         const teacherPasswordInput = document.getElementById('teacher-password');
         const logoutTeacherBtn = document.getElementById('logout-teacher-btn');
-        const changeDelegatePasswordForm = document.getElementById('change-delegate-password-form');
-        const newDelegatePasswordInput = document.getElementById('new-delegate-password');
+        const changeDelegatePasswordForm = document.getElementById('change-delegate-password-form'); // Nuevo/reintroducido
+        const newDelegatePasswordInput = document.getElementById('new-delegate-password'); // Nuevo/reintroducido
         const addStudentForm = document.getElementById('add-student-form');
         const studentAddUsernameInput = document.getElementById('student-add-username');
         const studentAddFullnameInput = document.getElementById('student-add-fullname');
         const studentAddPasswordInput = document.getElementById('student-add-password');
-        const bulkUploadStudentsBtn = document.getElementById('bulk-upload-students-btn'); // Nuevo botón
+        const bulkUploadStudentsBtn = document.getElementById('bulk-upload-students-btn');
         const studentListTable = document.getElementById('student-list');
         const strikeListTeacherTable = document.getElementById('strike-list-teacher');
 
-        // Elementos de la sección del Delegado
-        const delegatePasswordInput = document.getElementById('delegate-password');
+        // Elementos de la sección del Delegado (ahora solo para interfaz)
         const logoutDelegateBtn = document.getElementById('logout-delegate-btn');
         const createStrikeForm = document.getElementById('create-strike-form');
         const strikeDateInput = document.getElementById('strike-date');
-        const strikeCourseInput = document.getElementById('strike-course');
+        const strikeCourseInput = document.getElementById('strike-course'); // Corrección del typo aquí
         const strikeDescriptionInput = document.getElementById('strike-description');
+        const delegateStrikesList = document.getElementById('delegate-strikes-list'); // Nuevo
+        const noStrikesMessageDelegate = document.getElementById('no-strikes-message-delegate'); // Nuevo
 
         // Elementos de la sección del Estudiante
         const studentUsernameInput = document.getElementById('student-username');
         const studentPasswordInput = document.getElementById('student-password');
         const logoutStudentBtn = document.getElementById('logout-student-btn');
         const studentFullnameDisplay = document.getElementById('student-fullname-display');
-        const strikesForStudentsList = document.getElementById('strikes-for-students-list');
-        const noStrikesMessage = document.getElementById('no-strikes-message');
+        const studentStrikesList = document.getElementById('student-strikes-list'); // Renombrado de strikes-for-students-list
+        const noStrikesMessageStudent = document.getElementById('no-strikes-message-student'); // Renombrado de no-strikes-message
+
 
         // Estado de la sesión actual (se guarda en localStorage para persistencia básica)
         let currentRole = localStorage.getItem('currentRole') || null;
         let currentStudentId = localStorage.getItem('currentStudentId') || null; // ID de Firestore del estudiante
         let currentStudentUsername = localStorage.getItem('currentStudentUsername') || null;
         let currentStudentFullName = localStorage.getItem('currentStudentFullName') || null;
+        let isCurrentStudentDelegate = localStorage.getItem('isCurrentStudentDelegate') === 'true'; // Nuevo: si el estudiante logueado es delegado
+
 
         // --- Funciones de Utilidad ---
 
@@ -530,20 +566,20 @@
             localStorage.removeItem('currentStudentId');
             localStorage.removeItem('currentStudentUsername');
             localStorage.removeItem('currentStudentFullName');
+            localStorage.removeItem('isCurrentStudentDelegate'); // Nuevo: limpia el flag de delegado
             currentRole = null;
             currentStudentId = null;
             currentStudentUsername = null;
             currentStudentFullName = null;
+            isCurrentStudentDelegate = false;
 
             showSection(loginSection); // Muestra la sección de login
             // Reinicia los campos de entrada y el selector de rol
             teacherPasswordInput.value = '';
-            delegatePasswordInput.value = '';
             studentUsernameInput.value = '';
             studentPasswordInput.value = '';
             roleSelect.value = 'teacher'; // Restablece el desplegable a 'Docente'
             teacherLoginForm.classList.remove('hidden'); // Muestra el formulario de docente por defecto
-            delegateLoginForm.classList.add('hidden');
             studentLoginForm.classList.add('hidden');
 
             // Intenta cerrar sesión de Firebase Auth (esto limpiará el token de autenticación)
@@ -563,6 +599,9 @@
          */
         async function initializeFirebaseAndAuth() {
             try {
+                // Imprime la configuración de Firebase para depuración
+                console.log("Firebase config usada:", firebaseConfig);
+
                 // Inicializa la aplicación Firebase con la configuración proporcionada
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app); // Obtiene la instancia de Firestore
@@ -579,18 +618,21 @@
                         
                         // Restaura la sesión basada en el rol almacenado
                         if (currentRole) {
-                            if (currentRole === 'teacher') showSection(teacherSection);
-                            else if (currentRole === 'delegate') showSection(delegateSection);
-                            else if (currentRole === 'student') {
+                            if (currentRole === 'teacher') {
+                                showSection(teacherSection);
+                            } else if (currentRole === 'student') { // Ahora 'student' incluye delegados
                                 studentFullnameDisplay.textContent = currentStudentFullName || currentStudentUsername || 'Estudiante';
-                                showSection(studentSection);
+                                if (isCurrentStudentDelegate) {
+                                    showSection(delegateSection);
+                                } else {
+                                    showSection(studentSection);
+                                }
                             }
                             showMessage(`Bienvenido, ${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}.`, 3000);
                         } else {
                             // Si no hay rol guardado (primera carga o logout), muestra la sección de login
                             showSection(loginSection);
                             teacherLoginForm.classList.remove('hidden');
-                            delegateLoginForm.classList.add('hidden');
                             studentLoginForm.classList.add('hidden');
                         }
                     } else {
@@ -606,11 +648,11 @@
                             }
                         } catch (error) {
                             console.error("Error al iniciar sesión anónima:", error);
-                            showMessage("Error al iniciar sesión anónima en Firebase.", 5000);
+                            // Este error es el que estamos depurando, por eso el mensaje es más específico
+                            showMessage("Error al iniciar sesión. Asegúrate de que Firebase Auth esté habilitado y la API Key sea válida.", 8000);
                             // Si incluso el inicio de sesión anónima falla, permanece en la pantalla de login y muestra el error
                             showSection(loginSection);
                             teacherLoginForm.classList.remove('hidden');
-                            delegateLoginForm.classList.add('hidden');
                             studentLoginForm.classList.add('hidden');
                         }
                     }
@@ -628,13 +670,12 @@
         function setupAppListeners() {
             if (!db) return; // Asegúrate de que db esté inicializado
 
-            // Listener para la colección de configuración de la aplicación (claves de docente/delegado)
-            // Se usa public/data ya que las credenciales son globales para la aplicación y accesibles por cualquier usuario autenticado.
+            // Listener para la colección de configuración de la aplicación (claves de docente)
             onSnapshot(doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings'), (docSnapshot) => {
                 if (!docSnapshot.exists()) {
                     // Si el documento de configuración no existe, lo crea con valores por defecto
                     setDoc(doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings'), {
-                        //Las claves ya se definieron en su momento, no hace falta harcodear nada más
+                        teacherPassword: simpleHash('docente123'), // Clave docente por defecto
                     }).then(() => {
                         console.log("Configuración por defecto de la aplicación creada.");
                     }).catch(error => {
@@ -648,7 +689,6 @@
             });
 
             // Listener para la colección de estudiantes (para la sección del docente)
-            // Se usa public/data para que sea accesible por cualquier usuario autenticado para el login.
             onSnapshot(collection(db, `artifacts/${appId}/public/data/students`), (snapshot) => {
                 const students = [];
                 snapshot.forEach(doc => {
@@ -673,8 +713,12 @@
                     strikeData.adhesions = adhesionsSnapshot.docs.map(adDoc => ({ id: adDoc.id, ...adDoc.data() }));
                     strikes.push(strikeData);
                 }
-                displayStrikesForTeacher(strikes); // Actualiza la tabla de huelgas para el docente
-                displayStrikesForStudents(strikes); // Actualiza la lista de huelgas para los estudiantes
+                allStrikes = strikes; // Store the fetched strikes globally
+                console.log("onSnapshot for strikes fired. Strikes:", allStrikes); // Debug para ver los datos que llegan
+                displayStrikesForTeacher(allStrikes); // Actualiza la tabla de huelgas para el docente
+                // Pasa el ID del contenedor correcto para la lista de huelgas del estudiante/delegado
+                displayStrikesForStudents(allStrikes, 'student-strikes-list', 'no-strikes-message-student');
+                displayStrikesForStudents(allStrikes, 'delegate-strikes-list', 'no-strikes-message-delegate');
             }, (error) => {
                 console.error("Error al obtener huelgas:", error);
                 showMessage("Error al cargar la lista de huelgas.", 3000);
@@ -690,14 +734,10 @@
         // Maneja el cambio en el selector de rol para mostrar el formulario de login adecuado
         roleSelect.addEventListener('change', (event) => {
             teacherLoginForm.classList.add('hidden');
-            delegateLoginForm.classList.add('hidden');
-            studentLoginForm.classList.add('hidden');
+            studentLoginForm.classList.add('hidden'); // Solo 2 opciones ahora
             switch (event.target.value) {
                 case 'teacher':
                     teacherLoginForm.classList.remove('hidden');
-                    break;
-                case 'delegate':
-                    delegateLoginForm.classList.remove('hidden');
                     break;
                 case 'student':
                     studentLoginForm.classList.remove('hidden');
@@ -720,7 +760,6 @@
 
             try {
                 // Obtiene el documento de configuración para verificar la clave
-                // Ahora bajo public/data
                 const docRef = doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings');
                 const docSnap = await getDoc(docRef);
 
@@ -738,44 +777,8 @@
                 showMessage("Error al iniciar sesión como docente.", 3000);
             }
         });
-
-        // Maneja el envío del formulario de login del Delegado
-        delegateLoginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (!isAuthReady) {
-                showMessage("La aplicación no está lista aún. Intente de nuevo en unos segundos.", 3000);
-                return;
-            }
-            const password = delegatePasswordInput.value;
-            if (!password) {
-                showMessage("Por favor, ingrese la clave del delegado.", 3000);
-                return;
-            }
-
-            try {
-                // Obtiene el documento de configuración para verificar la clave
-                // Ahora bajo public/data
-                const docRef = doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings');
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists() && simpleHash(password) === docSnap.data().delegatePassword) {
-                    localStorage.setItem('currentRole', 'delegate'); // Guarda el rol en localStorage
-                    currentRole = 'delegate';
-                    showSection(delegateSection); // Muestra la sección del delegado
-                    showMessage("Sesión de delegado iniciada.", 3000);
-                    delegatePasswordInput.value = ''; // Limpia el campo de contraseña
-                } else {
-                    showMessage("Clave de delegado incorrecta.", 3000);
-                }
-            }
-            // Add a catch block for any errors during delegate login
-            catch (error) {
-                console.error("Error durante el login del delegado:", error);
-                showMessage("Error al iniciar sesión como delegado.", 3000);
-            }
-        });
-
-        // Maneja el envío del formulario de login del Estudiante
+        
+        // Maneja el envío del formulario de login del Estudiante (ahora unificado)
         studentLoginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             if (!isAuthReady) {
@@ -791,9 +794,8 @@
 
             try {
                 // Consulta la colección de estudiantes para encontrar el usuario
-                // Ahora bajo public/data
                 const studentsRef = collection(db, `artifacts/${appId}/public/data/students`);
-                const q = query(studentsRef, where('username', '==', username));
+                const q = query(studentsRef, where('username', '==', username.toLowerCase())); // Convertir a minúsculas
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
@@ -805,31 +807,47 @@
                         localStorage.setItem('currentStudentId', studentDoc.id); // Guarda el ID de Firestore del estudiante
                         localStorage.setItem('currentStudentUsername', studentData.username);
                         localStorage.setItem('currentStudentFullName', studentData.fullName);
+                        localStorage.setItem('isCurrentStudentDelegate', studentData.isDelegate || false); // Guarda el flag de delegado
+                        
                         currentRole = 'student';
                         currentStudentId = studentDoc.id;
                         currentStudentUsername = studentData.username;
                         currentStudentFullName = studentData.fullName;
+                        isCurrentStudentDelegate = studentData.isDelegate || false; // Asigna el valor del flag
 
                         studentFullnameDisplay.textContent = studentData.fullName; // Muestra el nombre completo
-                        showSection(studentSection); // Muestra la sección del estudiante
-                        showMessage(`Bienvenido, ${studentData.fullName}!`, 3000);
+                        
+                        if (isCurrentStudentDelegate) {
+                            showSection(delegateSection); // Si es delegado, va a la sección de delegado
+                            showMessage(`Bienvenido, Delegado ${studentData.fullName}!`, 3000);
+                        } else {
+                            showSection(studentSection); // Si no es delegado, va a la sección de estudiante
+                            showMessage(`Bienvenido, ${studentData.fullName}!`, 3000);
+                        }
+                        
                         studentUsernameInput.value = '';
                         studentPasswordInput.value = '';
+
+                        // FORZAR RE-RENDER de las listas de huelgas con el ID de estudiante actualizado
+                        displayStrikesForStudents(allStrikes, 'student-strikes-list', 'no-strikes-message-student');
+                        displayStrikesForStudents(allStrikes, 'delegate-strikes-list', 'no-strikes-message-delegate');
+
+
                     } else {
-                        showMessage("Clave de estudiante incorrecta.", 3000);
+                        showMessage("Clave incorrecta.", 3000);
                     }
                 } else {
-                    showMessage("Usuario de estudiante no encontrado.", 3000);
+                    showMessage("Usuario no encontrado.", 3000);
                 }
             } catch (error) {
                 console.error("Error durante el login del estudiante:", error);
-                showMessage("Error al iniciar sesión como estudiante.", 3000);
+                showMessage("Error al iniciar sesión.", 3000);
             }
         });
 
         // --- Botones de Cerrar Sesión ---
         logoutTeacherBtn.addEventListener('click', clearLocalStorageAndLogout);
-        logoutDelegateBtn.addEventListener('click', clearLocalStorageAndLogout);
+        logoutDelegateBtn.addEventListener('click', clearLocalStorageAndLogout); // Mantener por si acaso, aunque unificado
         logoutStudentBtn.addEventListener('click', clearLocalStorageAndLogout);
 
         // --- Funciones de la Sección del Docente ---
@@ -844,14 +862,20 @@
             }
 
             try {
-                // Actualiza la clave del delegado en el documento de configuración
-                // Ahora bajo public/data
-                const settingsRef = doc(db, `artifacts/${appId}/public/data/app_settings`, 'settings');
-                await updateDoc(settingsRef, {
-                    delegatePassword: simpleHash(newPassword)
-                });
-                showMessage("Clave de delegado cambiada exitosamente.", 3000);
-                newDelegatePasswordInput.value = ''; // Limpia el campo
+                const studentsRef = collection(db, `artifacts/${appId}/public/data/students`);
+                const currentDelegateQuery = query(studentsRef, where('isDelegate', '==', true));
+                const currentDelegateSnapshot = await getDocs(currentDelegateQuery);
+
+                if (!currentDelegateSnapshot.empty) {
+                    const currentDelegateDoc = currentDelegateSnapshot.docs[0];
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, currentDelegateDoc.id), {
+                        passwordHash: simpleHash(newPassword)
+                    });
+                    showMessage(`Clave del delegado '${currentDelegateDoc.data().username}' cambiada exitosamente.`, 3000);
+                    newDelegatePasswordInput.value = '';
+                } else {
+                    showMessage("No se encontró ningún delegado para cambiar la clave.", 3000);
+                }
             } catch (error) {
                 console.error("Error al cambiar la clave del delegado:", error);
                 showMessage("Error al cambiar la clave del delegado.", 3000);
@@ -861,7 +885,7 @@
         // Maneja el envío del formulario para añadir un nuevo estudiante
         addStudentForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const username = studentAddUsernameInput.value.trim();
+            const username = studentAddUsernameInput.value.trim().toLowerCase(); // Guardar en minúsculas
             const fullName = studentAddFullnameInput.value.trim();
             const password = studentAddPasswordInput.value;
 
@@ -872,7 +896,6 @@
 
             try {
                 // Verifica si el nombre de usuario ya existe para evitar duplicados
-                // Ahora bajo public/data
                 const studentsRef = collection(db, `artifacts/${appId}/public/data/students`);
                 const q = query(studentsRef, where('username', '==', username));
                 const querySnapshot = await getDocs(q);
@@ -882,11 +905,12 @@
                     return;
                 }
 
-                // Añade el nuevo estudiante a la colección
+                // Añade el nuevo estudiante a la colección (siempre no delegado al crear)
                 await addDoc(studentsRef, {
                     username: username,
                     fullName: fullName,
                     passwordHash: simpleHash(password), // Guarda la contraseña hasheada
+                    isDelegate: false, // Por defecto, no es delegado al crear
                     createdAt: new Date()
                 });
                 showMessage("Estudiante añadido exitosamente.", 3000);
@@ -937,7 +961,8 @@
                     // Permite comas (,) o puntos y coma (;) como delimitadores
                     const parts = line.split(/[,;]/); 
                     if (parts.length === 3) {
-                        const [username, fullName, password] = parts.map(p => p.trim());
+                        const [usernameRaw, fullName, password] = parts.map(p => p.trim());
+                        const username = usernameRaw.toLowerCase(); // Guardar en minúsculas
                         if (username && fullName && password) {
                             try {
                                 // Verifica si el nombre de usuario ya existe para evitar duplicados
@@ -949,6 +974,7 @@
                                         username: username,
                                         fullName: fullName,
                                         passwordHash: simpleHash(password),
+                                        isDelegate: false, // Por defecto, no es delegado al cargar masivamente
                                         createdAt: new Date()
                                     });
                                     resultsHtml.push(`<p class="text-green-600">✅ Estudiante '${fullName}' (${username}) añadido.</p>`);
@@ -983,9 +1009,9 @@
          * @param {Array} students Un array de objetos estudiante.
          */
         function displayStudents(students) {
-            studentListTable.innerHTML = ''; // Limpia la lista actual
+            studentListTable.innerHTML = ''; // Limpia la tabla actual
             if (students.length === 0) {
-                studentListTable.innerHTML = '<tr><td colspan="3" class="px-4 py-2 text-center text-gray-500">No hay estudiantes registrados.</td></tr>';
+                studentListTable.innerHTML = '<tr><td colspan="4" class="px-4 py-2 text-center text-gray-500">No hay estudiantes registrados.</td></tr>';
                 return;
             }
             students.forEach(student => {
@@ -994,8 +1020,12 @@
                 row.innerHTML = `
                     <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${student.username}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${student.fullName}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                        ${student.isDelegate ? '<span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Delegado ✅</span>' : ''}
+                    </td>
                     <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                        <button data-id="${student.id}" class="btn-danger rounded-md text-xs px-2 py-1 delete-student-btn">Eliminar</button>
+                        <button data-id="${student.id}" class="btn-danger rounded-md text-xs px-2 py-1 delete-student-btn mr-2">Eliminar</button>
+                        ${!student.isDelegate ? `<button data-id="${student.id}" data-username="${student.username}" class="btn-secondary rounded-md text-xs px-2 py-1 make-delegate-btn">Hacer Delegado</button>` : ''}
                     </td>
                 `;
                 studentListTable.appendChild(row);
@@ -1029,6 +1059,45 @@
                     }
                 });
             });
+
+            // Añade event listeners a los botones de hacer delegado
+            document.querySelectorAll('.make-delegate-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const newDelegateId = event.target.dataset.id;
+                    const newDelegateUsername = event.target.dataset.username;
+                    const confirmed = await showConfirmationModal("Designar Delegado", `¿Estás seguro de que quieres designar a '${newDelegateUsername}' como el nuevo delegado? Esto removerá el rol de delegado de cualquier otro estudiante.`);
+                    
+                    if (confirmed) {
+                        try {
+                            const studentsRef = collection(db, `artifacts/${appId}/public/data/students`);
+                            // 1. Encontrar el delegado actual (si existe) y remover su rol
+                            const currentDelegateQuery = query(studentsRef, where('isDelegate', '==', true));
+                            const currentDelegateSnapshot = await getDocs(currentDelegateQuery);
+
+                            if (!currentDelegateSnapshot.empty) {
+                                const currentDelegateDoc = currentDelegateSnapshot.docs[0];
+                                // Solo si el delegado actual no es el mismo que el nuevo
+                                if (currentDelegateDoc.id !== newDelegateId) {
+                                    await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, currentDelegateDoc.id), {
+                                        isDelegate: false
+                                    });
+                                    showMessage(`Rol de delegado removido de '${currentDelegateDoc.data().username}'.`, 2000);
+                                }
+                            }
+
+                            // 2. Asignar el rol de delegado al nuevo estudiante
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, newDelegateId), {
+                                isDelegate: true
+                            });
+                            showMessage(`'${newDelegateUsername}' es ahora el delegado.`, 3000);
+
+                        } catch (error) {
+                            console.error("Error al designar delegado:", error);
+                            showMessage("Error al designar delegado. Por favor, inténtalo de nuevo.", 5000);
+                        }
+                    }
+                });
+            });
         }
 
         /**
@@ -1058,34 +1127,6 @@
                     </td>
                 `;
                 strikeListTeacherTable.appendChild(row);
-            });
-
-            // Añade event listeners a los botones de eliminar huelga
-            document.querySelectorAll('.delete-strike-btn').forEach(button => {
-                button.addEventListener('click', async (event) => {
-                    const strikeId = event.target.dataset.id;
-                    const confirmed = await showConfirmationModal("Eliminar Huelga", "¿Estás seguro de que quieres eliminar esta huelga y todas sus adhesiones?");
-                    if (confirmed) {
-                        try {
-                            // Elimina el documento de la huelga
-                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/strikes`, strikeId));
-
-                            // Elimina las adhesiones relacionadas (Firestore no tiene CASCADE DELETE)
-                            const adhesionsQuery = query(collection(db, `artifacts/${appId}/public/data/strike_adhesions`), where('strikeId', '==', strikeId));
-                            const adhesionsSnapshot = await getDocs(adhesionsQuery);
-                            const deletePromises = [];
-                            adhesionsSnapshot.forEach(adDoc => {
-                                deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/strike_adhesions`, adDoc.id)));
-                            });
-                            await Promise.all(deletePromises); // Espera a que todas las eliminaciones de adhesiones se completen
-
-                            showMessage("Huelga y adhesiones eliminadas.", 3000);
-                        } catch (error) {
-                            console.error("Error al eliminar huelga:", error);
-                            showMessage("Error al eliminar la huelga.", 3000);
-                        }
-                    }
-                });
             });
 
             // Añade event listeners a los botones de imprimir lista
@@ -1213,58 +1254,103 @@
                 });
                 showMessage("Huelga creada exitosamente.", 3000);
                 createStrikeForm.reset(); // Limpia el formulario
+
+                // Refrescar la lista de huelgas para el delegado después de crear una nueva
+                // El listener de onSnapshot ya se encarga de esto automáticamente, pero podemos forzar una actualización si es necesario
+                // En este caso, el onSnapshot ya está activo y debería refrescar la UI.
             } catch (error) {
                 console.error("Error al crear huelga:", error);
                 showMessage("Error al crear la huelga.", 3000);
             }
         });
 
-        // --- Funciones de la Sección del Estudiante ---
+        // --- Funciones de la Sección del Estudiante (y Delegado) ---
 
         /**
-         * Renderiza la lista de huelgas disponibles para los estudiantes.
+         * Renderiza la lista de huelgas disponibles para los estudiantes o delegados.
          * @param {Array} strikes Un array de objetos huelga.
+         * @param {string} targetContainerId El ID del elemento HTML donde se renderizará la lista.
+         * @param {string} noStrikesMessageId El ID del elemento de mensaje "no hay huelgas".
          */
-        function displayStrikesForStudents(strikes) {
-            strikesForStudentsList.innerHTML = ''; // Limpia la lista actual
+        async function displayStrikesForStudents(strikes, targetContainerId, noStrikesMessageId) { // Made async
+            const targetContainer = document.getElementById(targetContainerId);
+            const noStrikesMsg = document.getElementById(noStrikesMessageId);
+
+            if (!targetContainer) { // Safety check - now includes return
+                console.error(`Target container with ID ${targetContainerId} not found. Exiting function.`);
+                return; // Exit if container is null
+            }
+            if (!noStrikesMsg) { // Safety check - now includes return
+                console.error(`No strikes message element with ID ${noStrikesMessageId} not found. Exiting function.`);
+                return; // Exit if message element is null
+            }
+
+            targetContainer.innerHTML = '';
+            console.log(`Calling displayStrikesForStudents for ${targetContainerId} with ${strikes.length} strikes. Current Student ID: ${currentStudentId}`); // NEW DEBUG
+
             if (strikes.length === 0) {
-                noStrikesMessage.classList.remove('hidden'); // Muestra el mensaje si no hay huelgas
+                noStrikesMsg.classList.remove('hidden');
                 return;
             }
-            noStrikesMessage.classList.add('hidden'); // Oculta el mensaje si hay huelgas
+            noStrikesMsg.classList.add('hidden');
 
-            // Ordena las huelgas por fecha
-            strikes.sort((a, b) => new Date(a.date) - new Date(b.date));
+            let studentAdhesions = new Map(); // Map to store adhesion docs by strikeId
 
-            strikes.forEach(async strike => {
+            // Fetch all adhesions for the current student once
+            if (currentStudentId) {
+                try {
+                    const adhesionsQuery = query(collection(db, `artifacts/${appId}/public/data/strike_adhesions`), where('studentId', '==', currentStudentId));
+                    const adhesionsSnapshot = await getDocs(adhesionsQuery);
+                    adhesionsSnapshot.forEach(doc => {
+                        studentAdhesions.set(doc.data().strikeId, doc); // Store the whole doc for later deletion
+                    });
+                    console.log(`Fetched ${studentAdhesions.size} adhesions for student ${currentStudentId} in ${targetContainerId}`); // NEW DEBUG
+                } catch (error) {
+                    console.error(`Error fetching adhesions for student ${currentStudentId} in ${targetContainerId}:`, error);
+                    showMessage("Error al cargar tus adhesiones a huelgas.", 3000);
+                }
+            } else {
+                console.warn(`currentStudentId is null for ${targetContainerId}. Cannot check student adhesions.`); // NEW DEBUG
+            }
+
+            const currentDate = new Date(); // Get current date/time for comparison
+            currentDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+
+
+            strikes.forEach(strike => {
+                const strikeDate = new Date(strike.date); // Convert strike date string to Date object
+                strikeDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+                const isPastEvent = strikeDate < currentDate; // Check if the event date is in the past
+
                 const strikeCard = document.createElement('div');
-                strikeCard.className = 'bg-white p-4 rounded-lg shadow mb-4 last:mb-0';
+                // Añade la clase strike-card-relative para posicionamiento absoluto del badge
+                strikeCard.className = 'bg-white p-4 rounded-lg shadow mb-4 last:mb-0 strike-card-relative'; 
+                
+                let badgeHtml = '';
+                if (isPastEvent) {
+                    badgeHtml = `<span class="event-finished-badge">Evento Finalizó</span>`;
+                }
+
                 strikeCard.innerHTML = `
+                    ${badgeHtml}
                     <h4 class="text-lg font-semibold text-gray-800">${strike.description}</h4>
                     <p class="text-sm text-gray-600 mb-2">Fecha: ${strike.date} | Curso: ${strike.course}</p>
                     <div class="flex items-center">
-                        <input type="checkbox" id="adhere-${strike.id}" data-strike-id="${strike.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mr-2 adhere-checkbox">
-                        <label for="adhere-${strike.id}" class="text-gray-700 select-none cursor-pointer">Me adhiero a esta huelga</label>
+                        <input type="checkbox" id="adhere-${strike.id}-${targetContainerId}" data-strike-id="${strike.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mr-2 adhere-checkbox">
+                        <label for="adhere-${strike.id}-${targetContainerId}" class="text-gray-700 select-none cursor-pointer">Me adhiero a esta huelga</label>
                     </div>
                 `;
-                strikesForStudentsList.appendChild(strikeCard);
+                targetContainer.appendChild(strikeCard);
 
-                const checkbox = strikeCard.querySelector(`#adhere-${strike.id}`);
+                const checkbox = strikeCard.querySelector(`#adhere-${strike.id}-${targetContainerId}`);
                 const label = checkbox.parentElement.querySelector('label');
 
                 if (checkbox) {
-                    // Comprueba si el estudiante actual ya se ha adherido a esta huelga
-                    const adhesionRef = collection(db, `artifacts/${appId}/public/data/strike_adhesions`);
-                    const q = query(adhesionRef,
-                        where('strikeId', '==', strike.id),
-                        where('studentId', '==', currentStudentId) // Usa el ID de Firestore del estudiante
-                    );
-                    const querySnapshot = await getDocs(q);
-                    let existingAdhesionDoc = null; // Almacena la referencia del documento de adhesión si existe
+                    let existingAdhesionDoc = studentAdhesions.get(strike.id); // Check against the pre-fetched map
 
-                    if (!querySnapshot.empty) {
+                    if (existingAdhesionDoc) {
                         checkbox.checked = true;
-                        existingAdhesionDoc = querySnapshot.docs[0]; // Guarda el documento existente
                         label.textContent = 'Ya te has adherido a esta huelga';
                         label.classList.add('text-green-600');
                     } else {
@@ -1273,79 +1359,78 @@
                         label.classList.remove('text-green-600');
                     }
 
-                    // Maneja el evento de cambio del checkbox de adhesión
+                    // Disable checkbox if currentStudentId is null OR if event is in the past
+                    if (!currentStudentId || isPastEvent) {
+                        checkbox.disabled = true;
+                        if (!currentStudentId && !isPastEvent) { // Only change label if it's disabled due to no login, not past event
+                            label.textContent = 'Inicia sesión para adherirte';
+                            label.classList.add('text-gray-500');
+                        } else if (isPastEvent) {
+                            // If it's a past event, the badge handles the "finished" message
+                            // Keep original adhesion status text if already adhered
+                            // No change to label text here, badge handles finished state.
+                            label.classList.remove('text-gray-500', 'text-green-600'); // Clean up old text colors
+                        }
+                    }
+
+                    // Handle checkbox change event
                     checkbox.addEventListener('change', async (event) => {
+                        if (!currentStudentId) { // Double check before operation
+                            showMessage("Error: ID de estudiante no disponible. Intente iniciar sesión nuevamente.", 5000);
+                            event.target.checked = !event.target.checked; // Revert checkbox state
+                            return;
+                        }
+                        // Also prevent change if it's a past event
+                        if (isPastEvent) {
+                            showMessage("No puedes modificar la adhesión a un evento finalizado.", 3000);
+                            event.target.checked = !event.target.checked; // Revert checkbox state
+                            return;
+                        }
+                        
                         if (event.target.checked) {
-                            // Lógica para adherirse
-                            if (!currentStudentId) {
-                                showMessage("Error: ID de estudiante no disponible. Intente iniciar sesión nuevamente.", 5000);
-                                event.target.checked = false; // Revierte el estado del checkbox
-                                return;
-                            }
-                            const publicIp = await getPublicIpAddress(); // Obtiene la IP pública
+                            // Logic to adhere
+                            const publicIp = await getPublicIpAddress();
                             if (!publicIp) {
-                                event.target.checked = false; // Revierte el estado si no se pudo obtener la IP
+                                event.target.checked = false;
                                 return;
                             }
 
                             try {
-                                // Antes de añadir, verifica de nuevo si ya existe para evitar duplicados en caso de race condition
-                                const recheckQuery = query(adhesionRef,
-                                    where('strikeId', '==', strike.id),
-                                    where('studentId', '==', currentStudentId)
-                                );
-                                const recheckSnapshot = await getDocs(recheckQuery);
-
-                                if (recheckSnapshot.empty) {
-                                    // Añade la adhesión a la colección pública de adhesiones
-                                    const newAdhesionRef = await addDoc(collection(db, `artifacts/${appId}/public/data/strike_adhesions`), {
-                                        strikeId: strike.id,
-                                        studentId: currentStudentId, // Guarda el ID de Firestore del estudiante
-                                        studentUsername: currentStudentUsername, // Guarda el nombre de usuario (desnormalización)
-                                        studentFullName: currentStudentFullName, // Guarda el nombre completo (desnormalización)
-                                        publicIp: publicIp,
-                                        adheredAt: new Date() // Fecha y hora de adhesión
-                                    });
-                                    existingAdhesionDoc = await getDoc(newAdhesionRef); // Actualiza la referencia del documento existente
-                                    showMessage("¡Te has adherido a la huelga!", 3000);
-                                    label.textContent = 'Ya te has adherido a esta huelga';
-                                    label.classList.add('text-green-600');
-                                } else {
-                                    // Si ya existe (a pesar de la comprobación inicial), simplemente actualiza el estado de la UI
-                                    existingAdhesionDoc = recheckSnapshot.docs[0];
-                                    showMessage("Ya te habías adherido a esta huelga.", 3000);
-                                    label.textContent = 'Ya te has adherido a esta huelga';
-                                    label.classList.add('text-green-600');
-                                }
-
+                                const newAdhesionRef = await addDoc(collection(db, `artifacts/${appId}/public/data/strike_adhesions`), {
+                                    strikeId: strike.id,
+                                    studentId: currentStudentId,
+                                    studentUsername: currentStudentUsername,
+                                    studentFullName: currentStudentFullName,
+                                    publicIp: publicIp,
+                                    adheredAt: new Date()
+                                });
+                                // Update the map for immediate UI consistency (though onSnapshot will eventually re-render)
+                                studentAdhesions.set(strike.id, await getDoc(newAdhesionRef));
+                                showMessage("¡Te has adherido a la huelga!", 3000);
+                                label.textContent = 'Ya te has adherido a esta huelga';
+                                label.classList.add('text-green-600');
                             } catch (error) {
                                 console.error("Error al adherirse a la huelga:", error);
                                 showMessage("Error al adherirse a la huelga. Por favor, inténtalo de nuevo.", 5000);
-                                event.target.checked = false; // Revierte el estado del checkbox en caso de error
+                                event.target.checked = false; // Revert checkbox state
                             }
                         } else {
                             // Lógica para desadherirse (desmarcar checkbox)
-                            if (!currentStudentId) {
-                                showMessage("Error: ID de estudiante no disponible. No se puede desadherir.", 5000);
-                                event.target.checked = true; // Revierte el estado del checkbox
-                                return;
-                            }
-
                             try {
-                                if (existingAdhesionDoc) {
-                                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/strike_adhesions`, existingAdhesionDoc.id));
-                                    existingAdhesionDoc = null; // Limpia la referencia
+                                const docToDelete = studentAdhesions.get(strike.id);
+                                if (docToDelete) {
+                                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/strike_adhesions`, docToDelete.id));
+                                    studentAdhesions.delete(strike.id); // Remove from map
                                     showMessage("Has retirado tu adhesión a la huelga.", 3000);
                                     label.textContent = 'Me adhiero a esta huelga';
                                     label.classList.remove('text-green-600');
                                 } else {
-                                    // Esto podría ocurrir si el checkbox se desmarcó pero no había adhesión en la DB
                                     showMessage("No se encontró adhesión para retirar.", 3000);
                                 }
                             } catch (error) {
                                 console.error("Error al retirar adhesión a la huelga:", error);
                                 showMessage("Error al retirar la adhesión. Por favor, inténtalo de nuevo.", 5000);
-                                event.target.checked = true; // Revierte el estado del checkbox en caso de error
+                                event.target.checked = true; // Revert checkbox state
                             }
                         }
                     });
