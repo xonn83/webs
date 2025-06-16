@@ -318,8 +318,8 @@
 
         <div id="instructionsScreen" class="hidden">
             <h2>Instrucciones</h2>
-            <p>Tu misión es guiar al cursor por el área de juego para recoger **monedas 🪙** (niveles normales) y **estrellas ⭐** (niveles de jefe).</p>
-            <p>¡Pero ten cuidado! Evita colisionar con los **balones de fútbol ⚽** y los **zombis 🧟** que se mueven por el tablero. Si chocas o sales del área de juego, perderás una **vida 🖱️**.</p>
+            <p>Tu misión es guiar al cursor por el área de juego para recoger monedas 🪙 (niveles normales) y estrellas ⭐ (niveles de jefe).</p>
+            <p>¡Pero ten cuidado! Evita colisionar con los balones de fútbol ⚽ y los zombis 🧟 que se mueven por el tablero. Si chocas o sales del área de juego, perderás una vida 🖱️.</p>
             <p>Cada vez que pierdas una vida, el nivel se reinicia, pero tu puntuación se mantiene. Cuando te quedes sin vidas, la partida terminará.</p>
             <p>Los enemigos se harán más numerosos y rápidos a medida que avanzas de nivel. ¡A partir del Nivel 31, la locura no tendrá fin!</p>
             <button id="backButton" class="menu-button">Atrás</button>
@@ -1055,7 +1055,6 @@
 
 
             if (currentLives <= 0) { // Definitive Game Over
-                /*
                 gameOver = true;
                 
                 // Check if current score is a high score
@@ -1076,7 +1075,6 @@
                 // After initials (or if not high score), return to main menu
                 initializeGame(); // This will clear all overlays and show title screen
                 console.log("Game Over. Back to title screen.");
-            */
             } else { // Lost a life, but still have lives left: restart current level
                 overlayTitle.textContent = '¡Perdiste una vida!';
                 overlayMessage.textContent = `Nivel ${currentLevel} reiniciado. Te quedan ${currentLives} vidas. Haz clic para continuar.`;
