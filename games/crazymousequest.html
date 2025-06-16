@@ -1055,6 +1055,7 @@
 
 
             if (currentLives <= 0) { // Definitive Game Over
+                /*
                 gameOver = true;
                 
                 // Check if current score is a high score
@@ -1075,7 +1076,7 @@
                 // After initials (or if not high score), return to main menu
                 initializeGame(); // This will clear all overlays and show title screen
                 console.log("Game Over. Back to title screen.");
-
+            */
             } else { // Lost a life, but still have lives left: restart current level
                 overlayTitle.textContent = '¡Perdiste una vida!';
                 overlayMessage.textContent = `Nivel ${currentLevel} reiniciado. Te quedan ${currentLives} vidas. Haz clic para continuar.`;
