@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crazy Mouse Quest</title>
+    <style>
+        /* Estilos generales del cuerpo */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #222;
+            font-family: 'Inter', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eee;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Contenedor principal de la aplicación (envuelve todo) */
+        .app-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Pantallas de Título, Instrucciones y Mejores Puntuaciones */
+        #titleScreen, #instructionsScreen, #highScoresScreen, #initialsPrompt {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #333;
+            display: flex; /* Default display, will be set by JS */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 20;
+            border-radius: 12px;
+            border: 3px solid #00f;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Ocultar pantallas por defecto */
+        #instructionsScreen, #highScoresScreen, #initialsPrompt {
+            display: none; 
+        }
+
+        #titleScreen h1, #instructionsScreen h2, #highScoresScreen h2, #initialsPrompt h2 {
+            font-size: clamp(3em, 10vw, 5em);
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+            margin-bottom: clamp(20px, 5vw, 40px);
+        }
+
+        #instructionsScreen h2, #highScoresScreen h2, #initialsPrompt h2 {
+            font-size: clamp(2.5em, 8vw, 4em);
+        }
+
+        #instructionsScreen p, #initialsPrompt p {
+            font-size: clamp(0.9em, 2.5vw, 1.3em);
+            max-width: 80%;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        /* Botones de menú */
+        .menu-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background-color: #0088ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 136, 255, 0.4);
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px 0;
+        }
+
+        .menu-button:hover {
+            background-color: #0066cc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 136, 255, 0.6);
+        }
+
+        .menu-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 136, 255, 0.3);
+        }
+
+        /* Contenedor principal del juego */
+        .game-container {
+            position: relative;
+            border: 3px solid #00f;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            background-color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 820px;
+            box-sizing: border-box;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-container.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Estilos del Canvas */
+        #gameCanvas {
+            border: 1px solid #0099ff;
+            cursor: default;
+            border-radius: 8px;
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Estilos del contador de tiempo y nivel */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: clamp(1.2em, 4vw, 2em);
+            color: #00ff00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+            padding: 5px 0;
+        }
+
+        .score-display, .lives-display {
+            text-align: center;
+            flex-grow: 1;
+            padding: 0 5px;
+        }
+
+        .lives-display {
+            font-size: clamp(1.0em, 3vw, 1.5em);
+        }
+
+        /* Level Info will contain the progress bar and will be centered */
+        .level-info {
+            flex-grow: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 5px;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        /* Styles for the progress bar */
+        .progress-bar-track {
+            width: 150px;
+            height: 20px;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #00ff00;
+            border-radius: 8px;
+            transition: width 0.3s ease-in-out;
+        }
+
+        /* Pantalla de Game Over / Nivel Superado */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            z-index: 10;
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay-screen h2 {
+            font-size: clamp(2.5em, 8vw, 4em);
+            color: #ff3333;
+            text-shadow: 0 0 15px rgba(255, 51, 51, 0.8);
+            margin-bottom: clamp(20px, 5vw, 40px);
+        }
+
+        .overlay-screen p {
+            font-size: clamp(1em, 3vw, 1.5em);
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        /* Botón de reintentar */
+        .overlay-screen button {
+            padding: clamp(10px, 3vw, 15px) clamp(20px, 6vw, 30px);
+            font-size: clamp(1.2em, 4vw, 1.5em);
+            background-color: #0088ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 136, 255, 0.4);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #overlayButton:hover {
+            background-color: #0066cc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 136, 255, 0.6);
+        }
+
+        #overlayButton:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 136, 255, 0.3);
+        }
+
+        /* Estilos para la tabla de mejores puntuaciones */
+        #highScoresScreen table {
+            width: 80%;
+            max-width: 400px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            color: #eee;
+            font-size: 1.1em;
+        }
+
+        #highScoresScreen th, #highScoresScreen td {
+            border: 1px solid #0099ff;
+            padding: 10px;
+            text-align: left;
+        }
+
+        #highScoresScreen th {
+            background-color: #0055aa;
+            color: white;
+        }
+
+        #highScoresScreen td {
+            background-color: #2a2a2a;
+        }
+
+        #highScoresScreen tr:nth-child(even) td {
+            background-color: #3a3a3a;
+        }
+
+        #highScoresScreen button {
+            margin-top: 20px;
+        }
+
+        /* Estilos para el prompt de iniciales */
+        #initialsPrompt {
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 30; /* Higher z-index to overlay everything else */
+            display: none; /* Hidden by default */
+        }
+
+        #initialsInput {
+            padding: 10px 15px;
+            font-size: 1.5em;
+            width: 150px;
+            text-align: center;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+            color: white;
+            margin-bottom: 20px;
+            text-transform: uppercase; /* Force uppercase input */
+        }
+        #initialsInput:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <div id="titleScreen">
+            <h1>Crazy Mouse Quest</h1>
+            <button id="playButton" class="menu-button">Jugar</button>
+            <button id="highScoresButton" class="menu-button">Mejores Puntuaciones</button> <!-- Nuevo botón -->
+            <button id="instructionsButton" class="menu-button">Instrucciones</button>
+        </div>
+
+        <div id="instructionsScreen" class="hidden">
+            <h2>Instrucciones</h2>
+            <p>Tu misión es guiar al cursor por el área de juego para recoger **monedas 🪙** (niveles normales) y **estrellas ⭐** (niveles de jefe).</p>
+            <p>¡Pero ten cuidado! Evita colisionar con los **balones de fútbol ⚽** y los **zombis 🧟** que se mueven por el tablero. Si chocas o sales del área de juego, perderás una **vida 🖱️**.</p>
+            <p>Cada vez que pierdas una vida, el nivel se reinicia, pero tu puntuación se mantiene. Cuando te quedes sin vidas, la partida terminará.</p>
+            <p>Los enemigos se harán más numerosos y rápidos a medida que avanzas de nivel. ¡A partir del Nivel 31, la locura no tendrá fin!</p>
+            <button id="backButton" class="menu-button">Atrás</button>
+        </div>
+
+        <!-- Pantalla de Mejores Puntuaciones -->
+        <div id="highScoresScreen" class="hidden">
+            <h2>Mejores Puntuaciones</h2>
+            <table id="highScoresTable">
+                <thead>
+                    <tr>
+                        <th>Iniciales</th>
+                        <th>Puntuación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Las puntuaciones se insertarán aquí por JavaScript -->
+                </tbody>
+            </table>
+            <button id="backToMenuButton" class="menu-button">Atrás</button>
+        </div>
+
+        <!-- Prompt para introducir iniciales -->
+        <div id="initialsPrompt" class="hidden">
+            <h2>¡Nueva Puntuación Alta!</h2>
+            <p>¡Has alcanzado el Top 10!</p>
+            <p>Introduce tus iniciales (máx. 3 letras):</p>
+            <input type="text" id="initialsInput" maxlength="3" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+            <button id="submitInitialsButton" class="menu-button">Guardar</button>
+        </div>
+
+        <div id="gameContainer" class="game-container">
+            <div class="game-info">
+                <span id="score" class="score-display">0000</span>
+                <!-- Level Info now is a progress bar -->
+                <span id="levelInfo" class="level-info">
+                    <div class="progress-bar-track">
+                        <div id="collectibleProgressBarFill" class="progress-bar-fill"></div>
+                    </div>
+                </span>
+                <span id="livesDisplay" class="lives-display"></span>
+            </div>
+            <canvas id="gameCanvas"></canvas>
+            <div id="overlayScreen" class="overlay-screen hidden">
+                <h2 id="overlayTitle">¡GAME OVER!</h2>
+                <p id="overlayMessage"></p>
+                <button id="overlayButton">Reintentar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <script>
+        // --- Firebase Configuration (Provided by Canvas Environment) ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // Fallback for local testing
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let firebaseApp;
+        let db; // Firestore instance
+        let auth; // Auth instance
+        let currentUserId; // User ID for Firestore rules
+
+        async function initializeFirebase() {
+            if (!firebaseConfig) {
+                console.error("Firebase config no disponible. Las puntuaciones no se guardarán/cargarán.");
+                return;
+            }
+            try {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore.getFirestore(firebaseApp);
+                auth = firebase.auth.getAuth(firebaseApp);
+
+                if (initialAuthToken) {
+                    await firebase.auth.signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await firebase.auth.signInAnonymously(auth);
+                }
+                currentUserId = auth.currentUser?.uid || crypto.randomUUID();
+                console.log("Firebase inicializado. User ID:", currentUserId);
+            } catch (error) {
+                console.error("Error al inicializar Firebase o autenticar:", error);
+            }
+        }
+
+
+        // --- Game Configuration ---
+        const INITIAL_CANVAS_WIDTH = 800;
+        const INITIAL_CANVAS_HEIGHT = 600;
+        const BASE_ENEMY_SIZE = 15; // Base size for enemy sizing (used for both SoccerBall and Zombie visual scaling)
+        const MAX_INITIAL_ENEMY_SPEED = 4; // Max initial enemy speed
+        const MIN_INITIAL_ENEMY_SPEED = 2; // Min initial enemy speed
+        const REGULAR_BACKGROUND_COLOR = '#FFFFFF'; // White background for regular levels
+        const BOSS_BACKGROUND_COLOR = '#000000'; // Black background for boss stages (note: emoji colors are fixed)
+
+        const REGULAR_ENEMY_COLOR = '#000000'; // Black enemies for regular levels
+        const BOSS_ENEMY_COLOR = '#FFFFFF';   // White enemies for boss stages (note: emoji colors are fixed)
+
+        const ACCELERATION_INTERVAL_SECONDS = 10; // Interval to accelerate enemies
+        const ACCELERATION_PERCENTAGE = 10; // Percentage of speed increase
+        const COLLECTIBLES_NEEDED_PER_LEVEL = 8; // Collectibles needed to clear a level
+        const COLLECTIBLE_EMOJI_FONT_SIZE = 30; // Font size for Coin/Star emoji
+        const BOSS_STAGE_INTERVAL = 5; // Boss levels occur every 5 levels (5, 10, 15, etc.)
+        const STAR_DRAW_SIZE_FACTOR = 0.5; // Adjusted size for stars (-50% of original, so it's 0.5 * COLLECTIBLE_EMOJI_FONT_SIZE)
+        const STAR_SPEED_FACTOR_BOSS = 3.0; // Stars 200% faster (speed * 3) in Boss Stages
+
+        // --- Scoring ---
+        const POINTS_PER_SECOND = 1;
+        const POINTS_PER_COIN = 25;
+        const POINTS_PER_STAR = 50;
+
+        // --- Lives ---
+        const LIVES_COUNT = 3; // Initial number of lives
+        const LIFE_ICON = '🖱️'; // Computer mouse emoji for lives icon
+
+        // --- Sound ---
+        let coinSynth; // Tone.js Synth for coins
+        let starSynth; // Tone.js AMSynth for stars
+
+        const COIN_COLLECTIBLE_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; // C major scale for coins
+        const STAR_COLLECTIBLE_NOTES = ['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6']; // C major scale, one octave higher for stars
+        
+        let currentCoinNoteIndex = 0; // Index for current note in the coin scale
+        let currentStarNoteIndex = 0; // Index for current note in the star scale
+
+        const LEVEL_UP_FANFARE_NOTES = ['C5', 'E5', 'G5', 'C6']; // Notes for level up fanfare
+        const LEVEL_UP_FANFARE_DURATIONS = ['16n', '16n', '16n', '8n']; // Durations for fanfare notes
+        const LEVEL_UP_FANFARE_DELAYS = [0, 0.1, 0.2, 0.3]; // Delays between fanfare notes
+
+        // New: Sound for losing a life (splash/impact)
+        const LIFE_LOST_SOUND_NOTES = ['F3', 'Db3']; // Descending, slightly dissonant notes
+        const LIFE_LOST_SOUND_DURATIONS = ['8n', '4n']; // Shorter, then slightly longer
+        const LIFE_LOST_SOUND_DELAYS = [0, 0.1]; // Quick succession
+
+        // --- DOM Elements ---
+        const gameContainer = document.getElementById('gameContainer'); // Reference to the main game container
+        const titleScreen = document.getElementById('titleScreen');   // Reference to the title screen
+        const instructionsScreen = document.getElementById('instructionsScreen'); // New instructions screen
+        const playButton = document.getElementById('playButton'); // Play button on title screen
+        const instructionsButton = document.getElementById('instructionsButton'); // Instructions button
+        const highScoresButton = document.getElementById('highScoresButton'); // New high scores button
+        const backButton = document.getElementById('backButton'); // Back button on instructions screen
+        const backToMenuButton = document.getElementById('backToMenuButton'); // Back button on high scores screen
+
+        const highScoresTableBody = document.querySelector('#highScoresTable tbody'); // Table body for scores
+        const initialsInput = document.getElementById('initialsInput'); // Initials input field
+        const submitInitialsButton = document.getElementById('submitInitialsButton'); // Submit initials button
+
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const levelInfoDisplay = document.getElementById('levelInfo'); 
+        const collectibleProgressBarFill = document.getElementById('collectibleProgressBarFill');
+
+        const overlayScreen = document.getElementById('overlayScreen');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlayMessage = document.getElementById('overlayMessage');
+        const overlayButton = document.getElementById('overlayButton');
+
+        // --- Game State Variables ---
+        let gameStarted = false;
+        let gameOver = false;
+        let startTime = 0;
+        let animationFrameId;
+        let mouseX = 0;
+        let mouseY = 0;
+        let currentCanvasWidth = INITIAL_CANVAS_WIDTH;
+        let currentCanvasHeight = INITIAL_CANVAS_HEIGHT;
+        let accelerationLevel = 0;
+        let currentLevel = 1;
+        let collectiblesCollected = 0;
+        let coin = null;
+        let stars = [];
+        let enemies = [];
+        let waitingForStartClick = true;
+        let isBossStage = false;
+        let score = 0;
+        let lastSecondScoreUpdated = 0;
+        let currentLives = LIVES_COUNT;
+        
+        // Removed window.lastFinishedLevel as level selection is gone from title screen.
+
+
+        // --- SoccerBall Class ---
+        class SoccerBall {
+            constructor(sizeMultiplier, speedMultiplier, isBossLevel) {
+                this.type = 'soccerBall';
+                this.emoji = '⚽'; // Soccer ball emoji
+                this.fontSize = BASE_ENEMY_SIZE * sizeMultiplier * 2; // Font size based on base and multiplier
+                this.collisionRadius = this.fontSize * 0.4; // Approximate collision radius for emoji
+
+                this.x = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2;
+                this.y = Math.random() * (currentCanvasHeight - this.fontSize) + this.fontSize / 2;
+
+                let speed = (Math.random() * (MAX_INITIAL_ENEMY_SPEED - MIN_INITIAL_ENEMY_SPEED) + MIN_INITIAL_ENEMY_SPEED) * speedMultiplier;
+                let angle = Math.random() * Math.PI * 2;
+
+                this.dx = Math.cos(angle) * speed;
+                this.dy = Math.sin(angle) * speed;
+
+                this.isBossLevel = isBossLevel;
+                this.initialSpeedMultiplier = speedMultiplier;
+                this.initialSizeMultiplier = sizeMultiplier;
+            }
+
+            draw() {
+                ctx.font = `${this.fontSize}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Emojis render in their default colors, so setting fillStyle won't change them.
+                // However, we keep it for consistency if we later switch to custom drawing.
+                ctx.fillStyle = this.isBossLevel ? BOSS_ENEMY_COLOR : REGULAR_ENEMY_COLOR;
+                ctx.fillText(this.emoji, this.x, this.y);
+                // Reset text align/baseline to default if other text is drawn later
+                ctx.textAlign = 'start';
+                ctx.textBaseline = 'alphabetic';
+            }
+
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                // Boundary checks using collisionRadius
+                if (this.x + this.collisionRadius > currentCanvasWidth || this.x - this.collisionRadius < 0) {
+                    this.dx *= -1;
+                    if (this.x + this.collisionRadius > currentCanvasWidth) this.x = currentCanvasWidth - this.collisionRadius;
+                    if (this.x - this.collisionRadius < 0) this.x = this.collisionRadius;
+                }
+
+                if (this.y + this.collisionRadius > currentCanvasHeight || this.y - this.collisionRadius < 0) {
+                    this.dy *= -1;
+                    if (this.y + this.collisionRadius > currentCanvasHeight) this.y = currentCanvasHeight - this.collisionRadius;
+                    if (this.y - this.collisionRadius < 0) this.y = this.collisionRadius;
+                }
+            }
+
+            increaseSpeed(percentage) {
+                let currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+                let newSpeed = currentSpeed * (1 + percentage / 100);
+
+                if (currentSpeed > 0) {
+                    this.dx = (this.dx / currentSpeed) * newSpeed;
+                    this.dy = (this.dy / currentSpeed) * newSpeed;
+                }
+            }
+
+            resetState() {
+                this.x = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2;
+                this.y = Math.random() * (currentCanvasHeight - this.fontSize) + this.fontSize / 2;
+                // Re-calculate initial speed based on its stored initial speed multiplier
+                let speed = (Math.random() * (MAX_INITIAL_ENEMY_SPEED - MIN_INITIAL_ENEMY_SPEED) + MIN_INITIAL_ENEMY_SPEED) * this.initialSpeedMultiplier;
+                let angle = Math.random() * Math.PI * 2;
+                this.dx = Math.cos(angle) * speed;
+                this.dy = Math.sin(angle) * speed;
+            }
+        }
+
+        // --- Zombie Class ---
+        class Zombie {
+            constructor(sizeMultiplier, speedMultiplier, isBossLevel) {
+                this.type = 'zombie';
+                this.emoji = '🧟'; // Zombie emoji
+                this.fontSize = BASE_ENEMY_SIZE * sizeMultiplier * 2; // Font size based on base and multiplier
+                this.collisionRadius = this.fontSize * 0.4; // Approximate collision radius for emoji
+
+                this.x = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2;
+                this.y = Math.random() * (currentCanvasHeight - this.fontSize) + this.fontSize / 2;
+                this.isBossLevel = isBossLevel;
+
+                this.speed = (Math.random() * (MAX_INITIAL_ENEMY_SPEED - MIN_INITIAL_ENEMY_SPEED) + MIN_INITIAL_ENEMY_SPEED) * speedMultiplier;
+                this.initialSpeedMultiplier = speedMultiplier;
+                this.initialSizeMultiplier = sizeMultiplier;
+            }
+
+            draw() {
+                ctx.font = `${this.fontSize}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Emojis render in their default colors
+                ctx.fillStyle = this.isBossLevel ? BOSS_ENEMY_COLOR : REGULAR_ENEMY_COLOR;
+                ctx.fillText(this.emoji, this.x, this.y);
+                // Reset text align/baseline
+                ctx.textAlign = 'start';
+                ctx.textBaseline = 'alphabetic';
+            }
+
+            update() {
+                // Calculate direction vector to mouse
+                let angle = Math.atan2(mouseY - this.y, mouseX - this.x);
+
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+
+                // Keep emoji within bounds using collisionRadius
+                this.x = Math.max(this.collisionRadius, Math.min(this.x, currentCanvasWidth - this.collisionRadius));
+                this.y = Math.max(this.collisionRadius, Math.min(this.y, currentCanvasHeight - this.collisionRadius));
+            }
+
+            increaseSpeed(percentage) {
+                this.speed *= (1 + percentage / 100);
+            }
+
+            resetState() {
+                this.x = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2;
+                this.y = Math.random() * (currentCanvasHeight - this.fontSize) + this.fontSize / 2;
+                this.speed = (Math.random() * (MAX_INITIAL_ENEMY_SPEED - MIN_INITIAL_ENEMY_SPEED) + MIN_INITIAL_ENEMY_SPEED) * this.initialSpeedMultiplier;
+            }
+        }
+
+        // --- Coin Class ---
+        class Coin {
+            constructor() {
+                this.emoji = '🪙'; // The coin emoji
+                this.size = COLLECTIBLE_EMOJI_FONT_SIZE; // Font size for the emoji
+                this.collisionRadius = this.size * 0.4; // Collision radius, adjusted for emoji visual size (e.g., 40% of font size)
+                this.spawn();
+            }
+
+            spawn() {
+                this.x = Math.random() * (currentCanvasWidth - this.size) + this.size / 2;
+                this.y = Math.random() * (currentCanvasHeight - this.size) + this.size / 2;
+            }
+
+            draw() {
+                ctx.font = `${this.size}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, this.x, this.y);
+                ctx.textAlign = 'start';
+                ctx.textBaseline = 'alphabetic';
+            }
+        }
+
+        // --- Star Class ---
+        class Star {
+            constructor() {
+                this.emoji = '⭐'; // Star emoji
+                // Adjusted font size: now 50% of COLLECTIBLE_EMOJI_FONT_SIZE
+                this.fontSize = COLLECTIBLE_EMOJI_FONT_SIZE * STAR_DRAW_SIZE_FACTOR; 
+                this.collisionRadius = this.fontSize * 0.4; // Collision radius
+
+                let speed = (Math.random() * (MAX_INITIAL_ENEMY_SPEED - MIN_INITIAL_ENEMY_SPEED) + MIN_INITIAL_ENEMY_SPEED) * STAR_SPEED_FACTOR_BOSS;
+                let angle = Math.random() * Math.PI * 2;
+                this.dx = Math.cos(angle) * speed;
+                this.dy = Math.sin(angle) * speed;
+
+                this.spawn();
+            }
+
+            spawn() {
+                this.x = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2;
+                this.y = Math.random() * (currentCanvasWidth - this.fontSize) + this.fontSize / 2; // Fixed Y boundary
+            }
+
+            draw() {
+                ctx.font = `${this.fontSize}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, this.x, this.y);
+                ctx.textAlign = 'start';
+                ctx.textBaseline = 'alphabetic';
+            }
+
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.x + this.collisionRadius > currentCanvasWidth || this.x - this.collisionRadius < 0) {
+                    this.dx *= -1;
+                    if (this.x + this.collisionRadius > currentCanvasWidth) this.x = currentCanvasWidth - this.collisionRadius;
+                    if (this.x - this.collisionRadius < 0) this.x = this.collisionRadius;
+                }
+
+                if (this.y + this.collisionRadius > currentCanvasHeight || this.y - this.collisionRadius < 0) {
+                    this.dy *= -1;
+                    if (this.y + this.collisionRadius > currentCanvasHeight) this.y = currentCanvasHeight - this.collisionRadius;
+                    if (this.y - this.collisionRadius < 0) this.y = this.collisionRadius;
+                }
+            }
+        }
+
+
+        // --- Game Functions ---
+
+        function isCurrentLevelBossStage() {
+            return currentLevel > 0 && currentLevel % BOSS_STAGE_INTERVAL === 0;
+        }
+
+        // Helper to get tier properties based on level number
+        function getTierProperties(level) {
+            let sizeMultiplier, speedMultiplier, isChasing;
+            // Ensure levels beyond 30 use the last tier's properties
+            const effectiveLevel = Math.min(level, 30); // Cap at 30 for tier properties
+
+            if (effectiveLevel >= 1 && effectiveLevel <= 5) { // Levels 1-5: Small normal SoccerBalls
+                sizeMultiplier = 0.5; speedMultiplier = 1; isChasing = false;
+            } else if (effectiveLevel >= 6 && effectiveLevel <= 10) { // Levels 6-10: Medium 2x SoccerBalls
+                sizeMultiplier = 1.0; speedMultiplier = 2; isChasing = false;
+            } else if (effectiveLevel >= 11 && effectiveLevel <= 15) { // Levels 11-15: Large 3x SoccerBalls
+                sizeMultiplier = 2.0; speedMultiplier = 3; isChasing = false;
+            } else if (effectiveLevel >= 16 && effectiveLevel <= 20) { // Levels 16-20: Small normal chasing Zombies
+                sizeMultiplier = 0.5; speedMultiplier = 1; isChasing = true;
+            } else if (effectiveLevel >= 21 && effectiveLevel <= 25) { // Levels 21-25: Medium 2x chasing Zombies
+                sizeMultiplier = 1.0; speedMultiplier = 2; isChasing = true;
+            } else { // Levels 26-30: Large 3x chasing Zombies
+                sizeMultiplier = 2.0; speedMultiplier = 3; isChasing = true;
+            }
+            return { sizeMultiplier, speedMultiplier, isChasing };
+        }
+
+        // Function to create a single new enemy based on the rules for a given level number
+        function createSingleEnemyForLevelRules(levelForRules, isBossLevelFlag) {
+            const { sizeMultiplier, speedMultiplier, isChasing } = getTierProperties(levelForRules);
+
+            if (isChasing) {
+                return new Zombie(sizeMultiplier, speedMultiplier, isBossLevelFlag);
+            } else {
+                return new SoccerBall(sizeMultiplier, speedMultiplier, isBossLevelFlag);
+            }
+        }
+
+        // Generates the full set of enemies that should be present for a given level (e.g., at tier start)
+        function generateEnemiesForLevelStart(targetLevel) {
+            const enemiesForThisLevel = [];
+            // Determine boss stage status for targetLevel based on the level itself, not currentLevel
+            const isBossLevelFlag = targetLevel % BOSS_STAGE_INTERVAL === 0; 
+
+            // Determine the start level of the current tier
+            let tierStartLevel = 1;
+            if (targetLevel >= 6 && targetLevel <= 10) tierStartLevel = 6;
+            else if (targetLevel >= 11 && targetLevel <= 15) tierStartLevel = 11;
+            else if (targetLevel >= 16 && targetLevel <= 20) tierStartLevel = 16;
+            else if (targetLevel >= 21 && targetLevel <= 25) tierStartLevel = 21;
+            else if (targetLevel >= 26) tierStartLevel = 26; // Covers 26-30 (and above for infinite mode)
+
+            // Add initial 3 enemies for this tier
+            for (let i = 0; i < 3; i++) {
+                enemiesForThisLevel.push(createSingleEnemyForLevelRules(tierStartLevel, isBossLevelFlag));
+            }
+
+            // Accumulate enemies from previous levels within this tier IF NOT A TIER START LEVEL
+            // If targetLevel is a tierStartLevel (e.g., 1, 6, 11, etc.), no accumulation from previous levels within this tier
+            if (targetLevel > tierStartLevel) {
+                const accumulatedCountInTier = targetLevel - tierStartLevel;
+                for (let i = 0; i < accumulatedCountInTier; i++) {
+                    enemiesForThisLevel.push(createSingleEnemyForLevelRules(tierStartLevel, isBossLevelFlag));
+                }
+            }
+            return enemiesForThisLevel;
+        }
+
+        // New function: Creates a random enemy from any of the defined tiers (1-30)
+        function createRandomEnemy(isBossLevelFlag) {
+            // Pick a random level from 1 to 30 to determine the enemy's characteristics
+            const randomLevelTier = Math.floor(Math.random() * 30) + 1;
+            return createSingleEnemyForLevelRules(randomLevelTier, isBossLevelFlag);
+        }
+
+        // Resets the entire game (Level 1, full lives, score 0) and shows title screen
+        function initializeGame() {
+            console.log("initializeGame() called. Setting up title screen.");
+            // Ensure all screens are correctly hidden/shown
+            overlayScreen.classList.add('hidden');
+            instructionsScreen.style.display = 'none'; // Explicitly hide instructions
+            highScoresScreen.style.display = 'none'; // Explicitly hide high scores
+            gameContainer.classList.remove('visible'); // Hide game container (opacity 0, no pointer events)
+            titleScreen.style.display = 'flex'; // Show title screen
+
+            currentLevel = 1;
+            currentLives = LIVES_COUNT;
+            score = 0;
+            lastSecondScoreUpdated = 0;
+            updateScoreDisplay();
+            updateLivesDisplay();
+            
+            enemies = generateEnemiesForLevelStart(1); // Generate initial 3 enemies for level 1
+            console.log("Enemies generated at initializeGame (Level 1):", enemies.length);
+
+            gameStarted = false;
+            gameOver = false;
+            waitingForStartClick = true;
+            collectiblesCollected = 0;
+            coin = null;
+            stars = [];
+            
+            currentCoinNoteIndex = 0;
+            currentStarNoteIndex = 0;
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            if (Tone.Transport && Tone.Transport.state !== "stopped") {
+                Tone.Transport.stop().cancel();
+                console.log("Tone.Transport stopped and cancelled in initializeGame.");
+            }
+            updateLevelInfo();
+            draw();
+            adjustCanvasSize();
+        }
+
+        // Starts a new game from Level 1 when "Jugar" button is pressed
+        function startGameFromLevel1() {
+            currentLevel = 1; // Always start from level 1
+            currentLives = LIVES_COUNT;
+            score = 0;
+            lastSecondScoreUpdated = 0;
+            updateScoreDisplay();
+            updateLivesDisplay();
+
+            titleScreen.style.display = 'none'; // Hide title screen
+            instructionsScreen.style.display = 'none'; // Ensure instructions are hidden
+            gameContainer.classList.add('visible'); // Show game container
+
+            // Generate initial enemies for Level 1
+            enemies = generateEnemiesForLevelStart(1); // Start with clean enemies for Level 1
+            
+            console.log(`Starting game from Level 1. Generated ${enemies.length} enemies.`);
+
+            // Call resetCurrentLevelState to prepare the game state for Level 1, then wait for click
+            resetCurrentLevelState(true); 
+        }
+
+        // Resets current level state (collectibles, acceleration, enemies position/speed)
+        // Does NOT reset score or lives.
+        function resetCurrentLevelState(initialGameSetup = false) { // initialGameSetup: true if it's full restart
+            console.log("resetCurrentLevelState() called. InitialGameSetup:", initialGameSetup, "CurrentLevel:", currentLevel);
+            gameStarted = false;
+            gameOver = false;
+            waitingForStartClick = true;
+            startTime = 0;
+            accelerationLevel = 0;
+            collectiblesCollected = 0;
+
+            currentCoinNoteIndex = 0;
+            currentStarNoteIndex = 0;
+
+            isBossStage = isCurrentLevelBossStage(); // Update boss stage based on currentLevel
+
+            // FIX: Re-generate enemies list when starting a specific level (not just when coming from boss stage)
+            // This ensures starting at high level correctly loads all enemies accumulated up to that point.
+            if (initialGameSetup) { // This path is used by initializeGame and startGameFromLevel1
+                // Enemies array is already correctly populated by generateEnemiesForLevelStart
+                // or startNewGameFromSelectedLevel (if it were still active)
+            } else { // This path is used when losing a life (soft reset)
+                // When restarting a level (not initial game setup), just reset state of existing enemies
+                // Do NOT generate new ones, as enemies should only be added on levelUp or new game from title.
+            }
+            enemies.forEach(enemy => {
+                enemy.resetState();
+                enemy.isBossLevel = isBossStage; // Ensure correct color for the new level
+            });
+            console.log("Enemies after resetState and color update. Current count:", enemies.length);
+            
+            if (isBossStage) {
+                stars = [];
+                for (let i = 0; i < COLLECTIBLES_NEEDED_PER_LEVEL; i++) {
+                    stars.push(new Star());
+                }
+                coin = null;
+            } else {
+                coin = null;
+                stars = [];
+            }
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            if (Tone.Transport && Tone.Transport.state !== "stopped") {
+                Tone.Transport.stop().cancel();
+                console.log("Tone.Transport stopped and cancelled in resetCurrentLevelState.");
+            }
+            updateLevelInfo();
+            draw();
+        }
+
+        // --- High Score Functions ---
+
+        async function saveHighScore(initials, score) {
+            if (!db) {
+                console.error("Firestore no está inicializado. No se puede guardar la puntuación.");
+                return;
+            }
+            try {
+                // Ensure initials are uppercase and trimmed
+                initials = initials.toUpperCase().trim().substring(0,3);
+
+                const highScoresCollection = firebase.firestore.collection(db, `artifacts/${appId}/public/data/highscores`);
+                await firebase.firestore.addDoc(highScoresCollection, {
+                    initials: initials,
+                    score: score,
+                    timestamp: firebase.firestore.serverTimestamp() // Firestore timestamp
+                });
+                console.log("Puntuación guardada con éxito.");
+            } catch (error) {
+                console.error("Error al guardar la puntuación alta:", error);
+            }
+        }
+
+        async function getHighScores() {
+            if (!db) {
+                console.error("Firestore no está inicializado. No se pueden cargar las puntuaciones.");
+                return [];
+            }
+            try {
+                const highScoresCollection = firebase.firestore.collection(db, `artifacts/${appId}/public/data/highscores`);
+                const q = firebase.firestore.query(
+                    highScoresCollection,
+                    firebase.firestore.orderBy('score', 'desc'),
+                    firebase.firestore.limit(10)
+                );
+                const querySnapshot = await firebase.firestore.getDocs(q);
+                const scores = [];
+                querySnapshot.forEach((doc) => {
+                    scores.push(doc.data());
+                });
+                console.log("Puntuaciones cargadas:", scores);
+                return scores;
+            } catch (error) {
+                console.error("Error al cargar las puntuaciones altas:", error);
+                return [];
+            }
+        }
+
+        async function showHighScoresScreen() {
+            titleScreen.style.display = 'none';
+            gameContainer.classList.remove('visible');
+            instructionsScreen.style.display = 'none';
+            overlayScreen.classList.add('hidden');
+            initialsPrompt.style.display = 'none';
+
+            highScoresScreen.style.display = 'flex';
+            highScoresTableBody.innerHTML = '<tr><td colspan="2">Cargando puntuaciones...</td></tr>'; // Loading message
+
+            const scores = await getHighScores();
+            highScoresTableBody.innerHTML = ''; // Clear loading message
+
+            if (scores.length === 0) {
+                highScoresTableBody.innerHTML = '<tr><td colspan="2">No hay puntuaciones aún.</td></tr>';
+            } else {
+                scores.forEach((scoreData, index) => {
+                    const row = highScoresTableBody.insertRow();
+                    const initialsCell = row.insertCell();
+                    const scoreCell = row.insertCell();
+                    initialsCell.textContent = scoreData.initials || '---';
+                    scoreCell.textContent = scoreData.score;
+                });
+            }
+        }
+
+        async function showInitialsPrompt(finalScore) {
+            return new Promise(resolve => {
+                initialsInput.value = ''; // Clear previous input
+                initialsPrompt.style.display = 'flex'; // Show the prompt
+
+                const handleSubmit = async () => {
+                    let initials = initialsInput.value.trim().toUpperCase();
+                    if (initials.length === 0) initials = 'N/A'; // Default if empty
+
+                    await saveHighScore(initials, finalScore);
+                    initialsPrompt.style.display = 'none'; // Hide prompt after saving
+                    resolve(); // Resolve the promise to continue endGame flow
+                };
+
+                submitInitialsButton.onclick = handleSubmit;
+                // Add an option to skip (e.g., if user closes modal or clicks outside)
+                // For simplicity, we'll just use the submit button for now, no explicit cancel
+            });
+        }
+
+        // --- Game Flow Functions ---
+
+        function startGameSession() {
+            if (!gameOver && waitingForStartClick) {
+                console.log("startGameSession() called. Game started:", gameStarted, "Waiting for click:", waitingForStartClick);
+                if (!coinSynth) {
+                    coinSynth = new Tone.Synth().toDestination();
+                }
+                if (!starSynth) {
+                    starSynth = new Tone.AMSynth().toDestination();
+                }
+                Tone.start();
+                
+                if (Tone.Transport && Tone.Transport.state !== "stopped") {
+                    Tone.Transport.stop().cancel();
+                    console.log("Tone.Transport stopped and cancelled in startGameSession before starting.");
+                }
+                Tone.Transport.start();
+                console.log("Tone.Transport started in startGameSession.");
+
+                waitingForStartClick = false;
+                overlayScreen.classList.add('hidden');
+
+                if (!isBossStage) {
+                    coin = new Coin();
+                }
+
+                startTime = Date.now();
+                gameStarted = true;
+                gameLoop();
+                console.log("Game loop initiated. Current enemies:", enemies.length);
+            }
+        }
+
+        async function endGame() { // Made async to await showInitialsPrompt
+            console.log("endGame() called. Current Lives:", currentLives);
+            gameStarted = false;
+            cancelAnimationFrame(animationFrameId);
+            
+            currentLives--;
+            updateLivesDisplay();
+
+            playLifeLostSound();
+
+            // Schedule stopping/cancelling Tone.Transport AFTER the sound has played
+            Tone.Transport.scheduleOnce(() => {
+                if (Tone.Transport && Tone.Transport.state === "started") {
+                    if (currentLives <= 0) {
+                        Tone.Transport.stop().cancel(); // Full reset only on definitive Game Over
+                        console.log("Tone.Transport stopped and cancelled on definitive Game Over.");
+                    } else {
+                        Tone.Transport.stop(); // If just lost a life, simply stop.
+                        console.log("Tone.Transport stopped after life lost.");
+                    }
+                }
+            }, Tone.context.currentTime + 0.5); // 0.5s is enough for the short life lost sound
+
+
+            if (currentLives <= 0) { // Definitive Game Over
+                gameOver = true;
+                
+                // Check if current score is a high score
+                const topScores = await getHighScores();
+                let isHighScore = false;
+                if (topScores.length < 10) {
+                    isHighScore = true;
+                } else if (score > topScores[topScores.length - 1].score) {
+                    isHighScore = true;
+                }
+
+                if (isHighScore) {
+                    // Hide the current game over overlay before showing initials prompt
+                    overlayScreen.classList.add('hidden'); 
+                    await showInitialsPrompt(score); // Wait for user input
+                }
+
+                // After initials (or if not high score), return to main menu
+                initializeGame(); // This will clear all overlays and show title screen
+                console.log("Game Over. Back to title screen.");
+
+            } else { // Lost a life, but still have lives left: restart current level
+                overlayTitle.textContent = '¡Perdiste una vida!';
+                overlayMessage.textContent = `Nivel ${currentLevel} reiniciado. Te quedan ${currentLives} vidas. Haz clic para continuar.`;
+                overlayButton.textContent = 'Continuar';
+                overlayScreen.classList.remove('hidden');
+
+                // Tone.Transport stopping handled in the scheduled callback.
+                resetCurrentLevelState(false); // Perform soft reset of current level
+                console.log("Life lost. Level reset. Remaining lives:", currentLives);
+            }
+        }
+
+        function levelUp() {
+            console.log("levelUp() called. Current Level (before increment):", currentLevel);
+            gameStarted = false;
+            waitingForStartClick = true;
+
+            currentLevel++;
+            
+            collectiblesCollected = 0;
+            accelerationLevel = 0;
+            
+            const wasPreviousLevelBossStage = (currentLevel - 1) % BOSS_STAGE_INTERVAL === 0 && (currentLevel - 1) > 0;
+
+            if (wasPreviousLevelBossStage) {
+                console.log(`Transition from Boss Stage (Level ${currentLevel-1}). Clearing enemies and generating base for tier.`);
+                // If coming from a Boss Stage, clear all enemies and start with the base set for the new tier
+                enemies = generateEnemiesForLevelStart(currentLevel); // Use generateEnemiesForLevelStart for tier base
+            } else if (currentLevel > 30) {
+                console.log("Infinite mode: Adding random enemy.");
+                // For levels 31 and beyond, add one random enemy to the existing pool
+                enemies.push(createRandomEnemy(isCurrentLevelBossStage()));
+            }
+            // If not a boss stage and not beyond level 30, add one new enemy of the current tier's type
+            else {
+                console.log(`Adding one more enemy for Level ${currentLevel}.`);
+                // Add one new enemy based on the rules for the *current* level
+                enemies.push(createSingleEnemyForLevelRules(currentLevel, isCurrentLevelBossStage()));
+            }
+            console.log("Enemies after levelUp progression logic. Current count:", enemies.length);
+
+
+            startTime = Date.now();
+            lastSecondScoreUpdated = 0;
+            currentCoinNoteIndex = 0;
+            currentStarNoteIndex = 0;
+
+            isBossStage = isCurrentLevelBossStage();
+
+            enemies.forEach(enemy => {
+                enemy.isBossLevel = isBossStage;
+                enemy.resetState();
+            });
+            console.log("Enemies after resetState and color update in levelUp.");
+
+            if (isBossStage) {
+                stars = [];
+                for (let i = 0; i < COLLECTIBLES_NEEDED_PER_LEVEL; i++) {
+                    stars.push(new Star());
+                }
+                coin = null;
+                overlayTitle.textContent = `¡BOSS STAGE!`;
+                overlayMessage.textContent = `Prepara tu ratón para el Nivel ${currentLevel}. Recoge las ${COLLECTIBLES_NEEDED_PER_LEVEL} estrellas. Haz clic en el tablero para empezar.`;
+            } else {
+                coin = null;
+                stars = [];
+                overlayTitle.textContent = `¡Nivel ${currentLevel - 1} SUPERADO!`;
+                overlayMessage.textContent = `Prepara tu ratón para el Nivel ${currentLevel}. Haz clic en el tablero para empezar.`;
+            }
+
+            updateLevelInfo();
+            overlayButton.textContent = 'Continuar';
+            overlayScreen.classList.remove('hidden');
+
+            playLevelUpSound(); // This schedules notes, does not start Tone.Transport directly.
+
+            // Schedule stopping Tone.Transport AFTER the fanfare finishes
+            Tone.Transport.scheduleOnce(() => {
+                if (Tone.Transport && Tone.Transport.state === "started") {
+                    Tone.Transport.stop();
+                    console.log("Tone.Transport stopped after levelUp fanfare.");
+                }
+            }, Tone.context.currentTime + 0.7); // 0.7s should be enough for fanfare notes to play out
+            draw();
+        }
+
+        function updateScoreAndAcceleration() {
+            if (!gameOver && gameStarted) {
+                const currentElapsedTime = Math.floor((Date.now() - startTime) / 1000);
+
+                if (currentElapsedTime > lastSecondScoreUpdated) {
+                    score += POINTS_PER_SECOND * (currentElapsedTime - lastSecondScoreUpdated);
+                    lastSecondScoreUpdated = currentElapsedTime;
+                }
+                
+                updateScoreDisplay();
+
+                const newAccelerationLevel = Math.floor(currentElapsedTime / ACCELERATION_INTERVAL_SECONDS);
+
+                if (newAccelerationLevel > accelerationLevel) {
+                    accelerationLevel = newAccelerationLevel;
+                    enemies.forEach(enemy => enemy.increaseSpeed(ACCELERATION_PERCENTAGE));
+                }
+            }
+        }
+
+        function updateScoreDisplay() {
+             scoreDisplay.textContent = String(score).padStart(4, '0');
+        }
+
+        function updateLivesDisplay() {
+            livesDisplay.innerHTML = LIFE_ICON.repeat(currentLives);
+        }
+
+        function updateLevelInfo() {
+            const percentage = (collectiblesCollected / COLLECTIBLES_NEEDED_PER_LEVEL) * 100;
+            collectibleProgressBarFill.style.width = `${percentage}%`;
+        }
+
+        function playCollectibleSound(type) {
+            if (collectiblesCollected < COLLECTIBLES_NEEDED_PER_LEVEL) {
+                if (type === 'coin' && coinSynth) {
+                    coinSynth.triggerAttackRelease(COIN_COLLECTIBLE_NOTES[currentCoinNoteIndex], '8n');
+                    currentCoinNoteIndex = (currentCoinNoteIndex + 1) % COIN_COLLECTIBLE_NOTES.length;
+                } else if (type === 'star' && starSynth) {
+                    starSynth.triggerAttackRelease(STAR_COLLECTIBLE_NOTES[currentStarNoteIndex], '8n');
+                    currentStarNoteIndex = (currentStarNoteIndex + 1) % STAR_COLLECTIBLE_NOTES.length;
+                }
+            }
+        }
+
+        function playLevelUpSound() {
+            if (coinSynth) {
+                LEVEL_UP_FANFARE_NOTES.forEach((note, index) => {
+                    coinSynth.triggerAttackRelease(note, LEVEL_UP_FANFARE_DURATIONS[index], Tone.context.currentTime + LEVEL_UP_FANFARE_DELAYS[index]);
+                });
+            }
+        }
+
+        function playLifeLostSound() {
+            if (coinSynth) {
+                LIFE_LOST_SOUND_NOTES.forEach((note, index) => {
+                    coinSynth.triggerAttackRelease(note, LIFE_LOST_SOUND_DURATIONS[index], Tone.context.currentTime + LIFE_LOST_SOUND_DELAYS[index]);
+                });
+            }
+        }
+
+        function checkCollision() {
+            if (!gameStarted || gameOver || waitingForStartClick) return;
+
+            for (let i = 0; i < enemies.length; i++) {
+                const enemy = enemies[i];
+                let collided = false;
+
+                // All enemies now use center x,y and collisionRadius for point-circle collision
+                const distance = Math.sqrt(
+                    Math.pow(mouseX - enemy.x, 2) + Math.pow(mouseY - enemy.y, 2)
+                );
+                // Check collision based on the specific enemy type's collisionRadius
+                if (distance < enemy.collisionRadius) {
+                    collided = true;
+                }
+                
+                if (collided) {
+                    endGame(); // Handles life loss or game over
+                    return;
+                }
+            }
+
+            // Check collision with the collectible item
+            if (isBossStage) {
+                for (let i = stars.length - 1; i >= 0; i--) {
+                    const star = stars[i];
+                    const distanceToStar = Math.sqrt(
+                        Math.pow(mouseX - star.x, 2) + Math.pow(mouseY - star.y, 2)
+                    );
+                    if (distanceToStar < star.collisionRadius) {
+                        stars.splice(i, 1);
+                        collectiblesCollected++;
+                        score += POINTS_PER_STAR;
+                        playCollectibleSound('star');
+                        updateScoreDisplay();
+                        updateLevelInfo();
+                        if (collectiblesCollected === COLLECTIBLES_NEEDED_PER_LEVEL) {
+                            levelUp();
+                        }
+                        break;
+                    }
+                }
+            } else {
+                if (coin) { // Check collision with coin
+                    const distanceToCoin = Math.sqrt(
+                        Math.pow(mouseX - coin.x, 2) + Math.pow(mouseY - coin.y, 2)
+                    );
+                    if (distanceToCoin < coin.collisionRadius) {
+                        collectiblesCollected++;
+                        score += POINTS_PER_COIN;
+                        playCollectibleSound('coin'); // Play coin sound
+                        updateScoreDisplay();
+                        updateLevelInfo();
+                        if (collectiblesCollected < COLLECTIBLES_NEEDED_PER_LEVEL) {
+                            coin.spawn();
+                        } else {
+                            coin = null;
+                        }
+                        if (collectiblesCollected === COLLECTIBLES_NEEDED_PER_LEVEL) {
+                            levelUp();
+                        }
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight);
+            ctx.fillStyle = isBossStage ? BOSS_BACKGROUND_COLOR : REGULAR_BACKGROUND_COLOR;
+            ctx.fillRect(0, 0, currentCanvasWidth, currentCanvasHeight);
+
+            enemies.forEach(enemy => enemy.draw()); // Draw all enemies (SoccerBalls and Zombies)
+
+            if (isBossStage) {
+                 if (!waitingForStartClick) {
+                    stars.forEach(star => star.draw());
+                }
+            } else {
+                if (coin && !waitingForStartClick) { // Draw coin
+                    coin.draw();
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!gameOver && gameStarted) {
+                updateScoreAndAcceleration();
+                enemies.forEach(enemy => enemy.update()); // Update all enemies
+                if (isBossStage) {
+                    stars.forEach(star => star.update());
+                }
+                checkCollision();
+                draw();
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function adjustCanvasSize() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 20;
+            const aspectRatio = INITIAL_CANVAS_WIDTH / INITIAL_CANVAS_HEIGHT;
+
+            currentCanvasWidth = containerWidth;
+            currentCanvasHeight = currentCanvasWidth / aspectRatio;
+
+            canvas.width = currentCanvasWidth;
+            canvas.height = currentCanvasHeight;
+
+            if (isBossStage) {
+                stars.forEach(star => star.spawn());
+            } else {
+                if (coin && !waitingForStartClick) {
+                    coin.spawn();
+                }
+            }
+            draw();
+        }
+
+        // --- Event Listeners ---
+
+        playButton.addEventListener('click', startGameFromLevel1); // New event listener for Play button
+
+        instructionsButton.addEventListener('click', () => { // New event listener for Instructions button
+            titleScreen.style.display = 'none';
+            instructionsScreen.style.display = 'flex'; // Show instructions
+        });
+
+        backButton.addEventListener('click', () => { // New event listener for Back button
+            instructionsScreen.style.display = 'none'; // Hide instructions
+            titleScreen.style.display = 'flex'; // Show title screen
+        });
+
+        highScoresButton.addEventListener('click', showHighScoresScreen); // Event listener for high scores button
+        backToMenuButton.addEventListener('click', initializeGame); // Back button from high scores to main menu
+
+
+        submitInitialsButton.addEventListener('click', async () => {
+            const initials = initialsInput.value.trim().toUpperCase();
+            if (initials.length > 0) {
+                await saveHighScore(initials, score);
+            }
+            initialsPrompt.style.display = 'none'; // Hide prompt
+            initializeGame(); // Go back to main menu
+        });
+
+        canvas.addEventListener('click', startGameSession);
+
+        // Desactivar el menú contextual del botón derecho del ratón
+        canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault(); // Evita que se muestre el menú contextual
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            mouseX = (event.clientX - rect.left) * scaleX;
+            mouseY = (event.clientY - rect.top) * scaleY;
+
+            if (gameStarted && !gameOver && !waitingForStartClick) {
+                checkCollision();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (gameStarted && !gameOver && !waitingForStartClick) {
+                endGame();
+            }
+        });
+
+        overlayButton.addEventListener('click', () => {
+            if (gameOver) {
+                initializeGame(); // Full reset and back to title screen if actual Game Over
+            } else { // Level restart after losing a life
+                overlayScreen.classList.add('hidden');
+                draw();
+            }
+        });
+
+        window.addEventListener('resize', adjustCanvasSize);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const link = document.createElement('link');
+            link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap';
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+
+            await initializeFirebase(); // Initialize Firebase on load
+
+            setTimeout(initializeGame, 100);
+        });
+    </script>
+</body>
+</html>
