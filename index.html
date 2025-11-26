@@ -1129,6 +1129,36 @@
                 strikeListTeacherTable.appendChild(row);
             });
 
+            // Añade event listeners a los botones de eliminar huelga
+            document.querySelectorAll('.delete-strike-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const strikeId = event.target.dataset.id;
+                    const confirmed = await showConfirmationModal("Eliminar Huelga", "¿Estás seguro de que quieres eliminar esta huelga? Esto eliminará también todas las adhesiones de los estudiantes.");
+                    if (confirmed) {
+                        try {
+                            // Primero, elimina todas las adhesiones a esta huelga
+                            const adhesionsRef = collection(db, `artifacts/${appId}/public/data/strike_adhesions`);
+                            const q = query(adhesionsRef, where('strikeId', '==', strikeId));
+                            const querySnapshot = await getDocs(q);
+                            const deletePromises = [];
+                            querySnapshot.forEach(adDoc => {
+                                deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/strike_adhesions`, adDoc.id)));
+                            });
+                            await Promise.all(deletePromises);
+
+                            // Luego, elimina la huelga en sí
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/strikes`, strikeId));
+
+                            showMessage("Huelga y sus adhesiones eliminadas exitosamente.", 3000);
+                            event.target.closest('tr').remove(); // Elimina la fila de la tabla
+                        } catch (error) {
+                            console.error("Error al eliminar la huelga:", error);
+                            showMessage("Error al eliminar la huelga.", 3000);
+                        }
+                    }
+                });
+            });
+
             // Añade event listeners a los botones de imprimir lista
             document.querySelectorAll('.print-strike-btn').forEach(button => {
                 button.addEventListener('click', async (event) => {
